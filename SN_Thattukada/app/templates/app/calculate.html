@@ -1,0 +1,579 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Calculator | SN Tattukada{% endblock %}
+
+{% block nav_calc %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+    .calculator-layout {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 2.5rem;
+        align-items: start;
+    }
+
+    @media (max-width: 992px) {
+        .calculator-layout {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+    }
+
+    .calc-table th {
+        font-size: 0.85rem;
+    }
+
+    @media (max-width: 600px) {
+        .calc-table, 
+        .calc-table thead, 
+        .calc-table tbody, 
+        .calc-table th, 
+        .calc-table td, 
+        .calc-table tr {
+            display: block;
+            width: 100% !important;
+        }
+        .calc-table thead {
+            display: none;
+        }
+        .calc-table tr {
+            border: 1px solid var(--border-gray);
+            border-radius: var(--radius-md);
+            margin-bottom: 1.25rem;
+            padding: 1rem;
+            background-color: var(--bg-white);
+            box-shadow: var(--shadow-sm);
+        }
+        .calc-table td {
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 0.75rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: right !important;
+            height: auto !important;
+        }
+        .calc-table td:last-child {
+            border-bottom: none;
+        }
+        .calc-table td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            text-align: left;
+        }
+        .qty-input-container {
+            width: 140px;
+            justify-content: flex-end;
+        }
+    }
+
+    .qty-input-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 140px;
+    }
+
+    .qty-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: 1px solid var(--border-gray);
+        background-color: var(--bg-white);
+        color: var(--primary-red);
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .qty-btn:hover {
+        background-color: var(--light-red);
+        border-color: var(--primary-red);
+    }
+
+    .qty-field {
+        width: 60px;
+        height: 32px;
+        text-align: center;
+        border: 1px solid var(--border-gray);
+        border-radius: 6px;
+        font-weight: 600;
+        font-family: var(--font-family);
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+    .qty-field:focus {
+        border-color: var(--primary-red);
+        box-shadow: 0 0 0 2px var(--light-red);
+    }
+
+    /* Summary Card */
+    .summary-card {
+        position: sticky;
+        top: 90px;
+        border: 2px solid var(--primary-red);
+    }
+
+    .summary-header {
+        background-color: var(--primary-red);
+        color: var(--bg-white);
+        padding: 1.25rem;
+        font-weight: 800;
+        text-align: center;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .summary-body {
+        padding: 1.5rem;
+    }
+
+    .receipt-items {
+        max-height: 250px;
+        overflow-y: auto;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px dashed var(--border-gray);
+        padding-bottom: 1rem;
+    }
+
+    .receipt-item {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.95rem;
+        margin-bottom: 0.75rem;
+        color: var(--text-dark);
+    }
+
+    .receipt-item .item-details {
+        font-weight: 600;
+    }
+
+    .receipt-item .item-cost {
+        font-weight: 700;
+    }
+
+    .total-section {
+        background-color: var(--light-red);
+        border: 1px solid rgba(211, 47, 47, 0.2);
+        border-radius: var(--radius-md);
+        padding: 1.25rem;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .total-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        font-weight: 800;
+        color: var(--primary-red);
+        letter-spacing: 0.05em;
+        margin-bottom: 0.25rem;
+    }
+
+    .total-amount {
+        font-size: 2.25rem;
+        font-weight: 800;
+        color: var(--primary-red);
+        line-height: 1.1;
+    }
+
+    .action-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .empty-receipt {
+        text-align: center;
+        color: var(--text-muted);
+        padding: 2rem 0;
+        font-style: italic;
+    }
+
+    /* Modal dialog for billing */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0,0,0,0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+    }
+
+    .modal-card {
+        background-color: var(--bg-white);
+        border-radius: var(--radius-lg);
+        width: 100%;
+        max-width: 400px;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        border: 3px solid var(--primary-red);
+    }
+
+    .modal-header {
+        background-color: var(--primary-red);
+        color: var(--bg-white);
+        padding: 1rem;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+        font-family: 'Courier New', Courier, monospace;
+    }
+
+    .receipt-print {
+        border-top: 1px dashed var(--text-dark);
+        border-bottom: 1px dashed var(--text-dark);
+        padding: 1rem 0;
+        margin: 1rem 0;
+    }
+
+    .modal-footer {
+        padding: 1rem;
+        display: flex;
+        gap: 0.5rem;
+        background-color: var(--bg-light);
+    }
+
+    .modal-footer .btn {
+        flex: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="calculator-layout">
+    <!-- Left side: Items & quantities -->
+    <div class="card">
+        <div style="padding: 1.5rem; border-bottom: 1px solid var(--border-gray);">
+            <h2>Calculate Bill</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Adjust quantities below using arrows or direct typing to calculate the total.</p>
+        </div>
+
+        <div class="table-container">
+            {% if items %}
+                <table class="calc-table">
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th style="width: 120px; text-align: right;">Price</th>
+                            <th style="width: 180px; text-align: center;">Quantity</th>
+                            <th style="width: 140px; text-align: right;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr class="item-row" data-id="{{ item.id }}" data-name="{{ item.name }}" data-price="{{ item.price }}">
+                                <td data-label="Item Name" style="font-weight: 600;">{{ item.name }}</td>
+                                <td data-label="Price" style="text-align: right; font-weight: 600;">₹{{ item.price }}</td>
+                                <td data-label="Quantity" style="text-align: center;">
+                                    <div style="display: flex; justify-content: center; width: 100%;">
+                                        <div class="qty-input-container">
+                                            <button type="button" class="qty-btn dec-btn">-</button>
+                                            <input type="number" 
+                                                   class="qty-field" 
+                                                   value="0" 
+                                                   min="0" 
+                                                   max="999" 
+                                                   aria-label="Quantity for {{ item.name }}">
+                                            <button type="button" class="qty-btn inc-btn">+</button>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td data-label="Subtotal" style="text-align: right; font-weight: 700; color: var(--primary-red);" class="subtotal-display">
+                                    ₹0.00
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+                    <p>No items available to calculate. Add items in the dashboard first!</p>
+                    <a href="{% url 'add_item' %}" class="btn btn-primary" style="margin-top: 1.5rem;">Add Item</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right side: Real-time billing summary -->
+    <div class="card summary-card">
+        <div class="summary-header">
+            Bill Summary
+        </div>
+        <div class="summary-body">
+            <div class="receipt-items" id="receiptItems">
+                <div class="empty-receipt">No items selected</div>
+            </div>
+
+            <div class="total-section">
+                <div class="total-label">Grand Total</div>
+                <div class="total-amount" id="grandTotal">₹0.00</div>
+            </div>
+
+            <div class="action-row">
+                <button type="button" class="btn btn-primary" id="btnOpenSendModal" disabled>
+                    Send Bill via WhatsApp
+                </button>
+                <button type="button" class="btn btn-secondary" id="btnClear">
+                    Reset Calculator
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WhatsApp Send Modal -->
+<div class="modal-overlay" id="whatsappModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            Send Bill via WhatsApp
+        </div>
+        <div class="modal-body" style="font-family: var(--font-family);">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label class="form-label" for="whatsappNumber" style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; display: block;">
+                    Recipient WhatsApp Number
+                </label>
+                <input type="tel" 
+                       id="whatsappNumber" 
+                       placeholder="e.g., 919876543210" 
+                       class="form-input" 
+                       style="font-size: 1.05rem; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: var(--radius-md); width: 100%;">
+                <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.25rem;">
+                    Include country code without + or spaces (e.g., 91 for India).
+                </span>
+            </div>
+            
+            <label class="form-label" style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; display: block;">
+                Message Preview
+            </label>
+            <div id="messagePreview" style="background-color: var(--bg-light); border: 1px solid var(--border-gray); border-radius: var(--radius-md); padding: 1rem; font-family: monospace; white-space: pre-wrap; font-size: 0.9rem; color: var(--text-dark); max-height: 200px; overflow-y: auto;">
+                <!-- Filled dynamically -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>
+            <button type="button" class="btn btn-primary" id="btnSendWhatsApp">Send Message</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('.item-row');
+        const receiptItemsContainer = document.getElementById('receiptItems');
+        const grandTotalDisplay = document.getElementById('grandTotal');
+        const btnOpenSendModal = document.getElementById('btnOpenSendModal');
+        const btnClear = document.getElementById('btnClear');
+        let currentWhatsAppMessage = '';
+
+        function updateTotals() {
+            let grandTotal = 0;
+            let receiptHtml = '';
+            let selectedCount = 0;
+
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                const price = parseFloat(row.getAttribute('data-price'));
+                const qtyInput = row.querySelector('.qty-field');
+                let qty = parseInt(qtyInput.value) || 0;
+
+                if (qty < 0) {
+                    qty = 0;
+                    qtyInput.value = 0;
+                }
+
+                const subtotal = price * qty;
+                row.querySelector('.subtotal-display').textContent = '₹' + subtotal.toFixed(2);
+
+                if (qty > 0) {
+                    grandTotal += subtotal;
+                    selectedCount++;
+                    receiptHtml += `
+                        <div class="receipt-item">
+                            <span class="item-details">${name} <span style="color: var(--text-muted)">x${qty}</span></span>
+                            <span class="item-cost">₹${subtotal.toFixed(2)}</span>
+                        </div>
+                    `;
+                }
+            });
+
+            if (selectedCount === 0) {
+                receiptItemsContainer.innerHTML = '<div class="empty-receipt">No items selected</div>';
+                grandTotalDisplay.textContent = '₹0.00';
+                btnOpenSendModal.disabled = true;
+            } else {
+                receiptItemsContainer.innerHTML = receiptHtml;
+                grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
+                btnOpenSendModal.disabled = false;
+            }
+        }
+
+        // Add Event Listeners for qty change
+        rows.forEach(row => {
+            const decBtn = row.querySelector('.dec-btn');
+            const incBtn = row.querySelector('.inc-btn');
+            const qtyInput = row.querySelector('.qty-field');
+
+            decBtn.addEventListener('click', () => {
+                let val = parseInt(qtyInput.value) || 0;
+                if (val > 0) {
+                    qtyInput.value = val - 1;
+                    updateTotals();
+                }
+            });
+
+            incBtn.addEventListener('click', () => {
+                let val = parseInt(qtyInput.value) || 0;
+                qtyInput.value = val + 1;
+                updateTotals();
+            });
+
+            qtyInput.addEventListener('input', () => {
+                updateTotals();
+            });
+
+            // Prevent letters in typing but allow typing backspace or negative sign correctly handle
+            qtyInput.addEventListener('keydown', (e) => {
+                if (e.key === '-' || e.key === 'e') {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        // Reset
+        btnClear.addEventListener('click', () => {
+            rows.forEach(row => {
+                row.querySelector('.qty-field').value = 0;
+            });
+            updateTotals();
+        });
+
+        // Show WhatsApp Send Modal
+        btnOpenSendModal.addEventListener('click', () => {
+            let msgText = '*SN TATTUKADA BILL*\n';
+            msgText += '-----------------------------\n';
+            let grandTotal = 0;
+
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                const price = parseFloat(row.getAttribute('data-price'));
+                const qtyInput = row.querySelector('.qty-field');
+                const qty = parseInt(qtyInput.value) || 0;
+
+                if (qty > 0) {
+                    const subtotal = price * qty;
+                    grandTotal += subtotal;
+                    msgText += `${name} x${qty}: ₹${subtotal.toFixed(2)}\n`;
+                }
+            });
+
+            msgText += '-----------------------------\n';
+            msgText += `*GRAND TOTAL: ₹${grandTotal.toFixed(2)}*\n\n`;
+            msgText += 'Thank you! Visit again! 🍳';
+
+            currentWhatsAppMessage = msgText;
+            document.getElementById('messagePreview').textContent = msgText;
+            document.getElementById('whatsappModal').style.display = 'flex';
+        });
+
+        // Send WhatsApp action (Backend Auto-Dispatch)
+        document.getElementById('btnSendWhatsApp').addEventListener('click', () => {
+            const rawNum = document.getElementById('whatsappNumber').value;
+            const cleanNum = rawNum.replace(/[^0-9]/g, '');
+            
+            if (cleanNum.length < 10) {
+                showNotification('Please enter a valid 10-digit mobile number.', 'error');
+                return;
+            }
+            
+            const btnSend = document.getElementById('btnSendWhatsApp');
+            btnSend.disabled = true;
+            btnSend.textContent = 'Sending...';
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch("{% url 'send_whatsapp' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    phone: cleanNum,
+                    message: currentWhatsAppMessage
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error || 'Server error'); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                btnSend.disabled = false;
+                btnSend.textContent = 'Send Message';
+                if (data.success) {
+                    closeModal();
+                    showNotification(`Bill sent automatically to ${cleanNum}!`);
+                    btnClear.click(); // Reset calculator
+                } else {
+                    showNotification(data.error || 'Failed to send.', 'error');
+                }
+            })
+            .catch(error => {
+                btnSend.disabled = false;
+                btnSend.textContent = 'Send Message';
+                showNotification(error.message || 'Connection error.', 'error');
+            });
+        });
+
+        function showNotification(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = 'fade-in';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.right = '20px';
+            toast.style.padding = '1rem 1.5rem';
+            toast.style.borderRadius = 'var(--radius-md)';
+            toast.style.backgroundColor = type === 'success' ? '#DEF7EC' : '#FDE8E8';
+            toast.style.color = type === 'success' ? '#03543F' : '#9B1C1C';
+            toast.style.border = type === 'success' ? '1px solid #BCF0DA' : '1px solid #F8B4B4';
+            toast.style.boxShadow = 'var(--shadow-lg)';
+            toast.style.fontWeight = '600';
+            toast.style.zIndex = '9999';
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.5s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+    });
+
+    function closeModal() {
+        document.getElementById('whatsappModal').style.display = 'none';
+    }
+</script>
+{% endblock %}

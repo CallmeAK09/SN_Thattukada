@@ -1,0 +1,141 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Add New Item | SN Tattukada{% endblock %}
+
+{% block nav_add %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .form-header {
+        background-color: var(--primary-red);
+        color: var(--bg-white);
+        padding: 1.5rem 2rem;
+        border-top-left-radius: var(--radius-lg);
+        border-top-right-radius: var(--radius-lg);
+    }
+
+    .form-header h2 {
+        margin: 0;
+    }
+
+    .form-body {
+        padding: 2.5rem 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.75rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-dark);
+        font-size: 0.95rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        border: 1px solid var(--border-gray);
+        border-radius: var(--radius-md);
+        outline: none;
+        transition: all 0.2s ease;
+        font-family: var(--font-family);
+    }
+
+    .form-input:focus {
+        border-color: var(--primary-red);
+        box-shadow: 0 0 0 3px var(--light-red);
+    }
+
+    .error-list {
+        list-style: none;
+        color: var(--primary-red);
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 0.35rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .form-actions .btn {
+        flex: 1;
+    }
+
+    .validation-note {
+        background-color: var(--bg-light);
+        border-left: 4px solid var(--primary-red);
+        padding: 0.75rem 1rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+        .form-header {
+            padding: 1.25rem 1.5rem;
+        }
+        .form-body {
+            padding: 1.5rem 1.25rem;
+        }
+        .form-actions {
+            flex-direction: column-reverse;
+            gap: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="card">
+        <div class="form-header">
+            <h2>{% if is_edit %}Edit Menu Item{% else %}Add Menu Item{% endif %}</h2>
+        </div>
+        <div class="form-body">
+            <div class="validation-note">
+                <strong>Validation Rules:</strong>
+                <ul style="margin-left: 1.25rem; margin-top: 0.25rem;">
+                    <li><strong>Item Name:</strong> Must contain only alphabets, spaces, underscores, and parentheses.</li>
+                    <li><strong>Price:</strong> Must be a number greater than or equal to zero.</li>
+                </ul>
+            </div>
+
+            <form method="POST" novalidate>
+                {% csrf_token %}
+                
+                {% for field in form %}
+                    <div class="form-group">
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <ul class="error-list">
+                                {% for error in field.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <div class="form-actions">
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">{% if is_edit %}Update Item{% else %}Save Item{% endif %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
