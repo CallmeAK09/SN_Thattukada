@@ -1,6 +1,6 @@
 {% extends 'app/base.html' %}
 
-{% block title %}Calculator | SN Tattukada{% endblock %}
+{% block title %}SN Thattukada{% endblock %}
 
 {% block nav_calc %}active{% endblock %}
 
@@ -279,7 +279,7 @@
                     </div>
                     <div style="width: 100px;">
                         <label class="form-label" for="initialQtySelect" style="font-weight: 700; margin-bottom: 0.5rem; display: block;">Quantity</label>
-                        <input type="number" id="initialQtySelect" class="form-input" value="1" min="1" max="999" style="width: 100%; height: 46px; border-radius: var(--radius-md); border: 1px solid var(--border-gray); font-family: var(--font-family); font-size: 1rem; text-align: center; padding: 0.5rem;">
+                        <input type="number" id="initialQtySelect" class="form-input" value="0" min="0" max="999" style="width: 100%; height: 46px; border-radius: var(--radius-md); border: 1px solid var(--border-gray); font-family: var(--font-family); font-size: 1rem; text-align: center; padding: 0.5rem;">
                     </div>
                     <button type="button" class="btn btn-primary" id="btnAddItem" style="height: 46px; min-width: 120px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;">
                         <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>
@@ -525,6 +525,16 @@
             });
         }
 
+        // Reset quantity to 0 when item selection changes
+        if (itemSelect) {
+            itemSelect.addEventListener('change', () => {
+                const initialQtyInput = document.getElementById('initialQtySelect');
+                if (initialQtyInput) {
+                    initialQtyInput.value = 0;
+                }
+            });
+        }
+
         // Add item from dropdown
         if (btnAddItem) {
             btnAddItem.addEventListener('click', () => {
@@ -535,8 +545,15 @@
                 }
 
                 const initialQtyInput = document.getElementById('initialQtySelect');
-                let initialQty = parseInt(initialQtyInput.value) || 1;
-                if (initialQty < 1) initialQty = 1;
+                let initialQty = parseInt(initialQtyInput.value);
+                if (isNaN(initialQty)) {
+                    initialQty = 0;
+                }
+
+                if (initialQty <= 0) {
+                    showNotification('Quantity must be greater than 0 to add to bill.', 'error');
+                    return;
+                }
 
                 const id = selectedOption.value;
                 const name = selectedOption.getAttribute('data-name');
@@ -550,7 +567,7 @@
 
                 renderActiveItems();
                 itemSelect.selectedIndex = 0; // Reset select dropdown
-                initialQtyInput.value = 1; // Reset quantity select field to 1
+                initialQtyInput.value = 0; // Reset quantity select field to 0
                 showNotification(`Added ${initialQty}x ${name} to bill!`);
             });
         }
