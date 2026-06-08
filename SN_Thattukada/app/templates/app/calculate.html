@@ -258,56 +258,65 @@
 
 {% block content %}
 <div class="calculator-layout">
-    <!-- Left side: Items & quantities -->
+    <!-- Left side: Select & Add items -->
     <div class="card">
         <div style="padding: 1.5rem; border-bottom: 1px solid var(--border-gray);">
             <h2>Calculate Bill</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Adjust quantities below using arrows or direct typing to calculate the total.</p>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Select an item from the dropdown below, click "Add to Bill", and adjust quantities.</p>
         </div>
 
-        <div class="table-container">
+        <div style="padding: 1.5rem; border-bottom: 1px solid var(--border-gray); background-color: var(--bg-light);">
             {% if items %}
-                <table class="calc-table">
-                    <thead>
-                        <tr>
-                            <th>Item Name</th>
-                            <th style="width: 120px; text-align: right;">Price</th>
-                            <th style="width: 180px; text-align: center;">Quantity</th>
-                            <th style="width: 140px; text-align: right;">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in items %}
-                            <tr class="item-row" data-id="{{ item.id }}" data-name="{{ item.name }}" data-price="{{ item.price }}">
-                                <td data-label="Item Name" style="font-weight: 600;">{{ item.name }}</td>
-                                <td data-label="Price" style="text-align: right; font-weight: 600;">₹{{ item.price }}</td>
-                                <td data-label="Quantity" style="text-align: center;">
-                                    <div style="display: flex; justify-content: center; width: 100%;">
-                                        <div class="qty-input-container">
-                                            <button type="button" class="qty-btn dec-btn">-</button>
-                                            <input type="number" 
-                                                   class="qty-field" 
-                                                   value="0" 
-                                                   min="0" 
-                                                   max="999" 
-                                                   aria-label="Quantity for {{ item.name }}">
-                                            <button type="button" class="qty-btn inc-btn">+</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td data-label="Subtotal" style="text-align: right; font-weight: 700; color: var(--primary-red);" class="subtotal-display">
-                                    ₹0.00
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label class="form-label" for="itemSelect" style="font-weight: 700; margin-bottom: 0.5rem; display: block;">Choose Food Item</label>
+                        <select id="itemSelect" class="form-input" style="width: 100%; height: 46px; border-radius: var(--radius-md); border: 1px solid var(--border-gray); font-family: var(--font-family); font-size: 1rem; padding: 0.5rem 1rem; background-color: var(--bg-white);">
+                            <option value="" disabled selected>-- Choose an item --</option>
+                            {% for item in items %}
+                                <option value="{{ item.id }}" data-name="{{ item.name }}" data-price="{{ item.price }}">{{ item.name }} (₹{{ item.price }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="width: 100px;">
+                        <label class="form-label" for="initialQtySelect" style="font-weight: 700; margin-bottom: 0.5rem; display: block;">Quantity</label>
+                        <input type="number" id="initialQtySelect" class="form-input" value="1" min="1" max="999" style="width: 100%; height: 46px; border-radius: var(--radius-md); border: 1px solid var(--border-gray); font-family: var(--font-family); font-size: 1rem; text-align: center; padding: 0.5rem;">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="btnAddItem" style="height: 46px; min-width: 120px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;">
+                        <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>
+                        Add to Bill
+                    </button>
+                </div>
             {% else %}
-                <div style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+                <div style="text-align: center; padding: 1rem 0; color: var(--text-muted);">
                     <p>No items available to calculate. Add items in the dashboard first!</p>
-                    <a href="{% url 'add_item' %}" class="btn btn-primary" style="margin-top: 1.5rem;">Add Item</a>
+                    <a href="{% url 'add_item' %}" class="btn btn-primary" style="margin-top: 1rem;">Add Item</a>
                 </div>
             {% endif %}
+        </div>
+
+        <div class="table-container" id="activeItemsTableContainer" style="display: none;">
+            <table class="calc-table">
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th style="width: 120px; text-align: right;">Price</th>
+                        <th style="width: 180px; text-align: center;">Quantity</th>
+                        <th style="width: 140px; text-align: right;">Subtotal</th>
+                        <th style="width: 80px; text-align: center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="activeItemsBody">
+                    <!-- Added items will be injected here dynamically by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="calculatorEmptyState" style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+            <svg style="width: 64px; height: 64px; margin-bottom: 1rem; color: var(--border-gray);" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"></path>
+            </svg>
+            <p style="font-size: 1.05rem; font-weight: 600;">No items added to the bill yet.</p>
+            <p style="font-size: 0.85rem; margin-top: 0.25rem;">Select a food item above and click "Add to Bill" to start calculating.</p>
         </div>
     </div>
 
@@ -378,93 +387,178 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const rows = document.querySelectorAll('.item-row');
+        const itemSelect = document.getElementById('itemSelect');
+        const btnAddItem = document.getElementById('btnAddItem');
+        const activeItemsBody = document.getElementById('activeItemsBody');
+        const activeItemsTableContainer = document.getElementById('activeItemsTableContainer');
+        const calculatorEmptyState = document.getElementById('calculatorEmptyState');
         const receiptItemsContainer = document.getElementById('receiptItems');
         const grandTotalDisplay = document.getElementById('grandTotal');
         const btnOpenSendModal = document.getElementById('btnOpenSendModal');
         const btnClear = document.getElementById('btnClear');
+        
+        let activeItems = {}; // key: item_id, value: { id, name, price, qty }
         let currentWhatsAppMessage = '';
 
-        function updateTotals() {
-            let grandTotal = 0;
-            let receiptHtml = '';
-            let selectedCount = 0;
-
-            rows.forEach(row => {
-                const name = row.getAttribute('data-name');
-                const price = parseFloat(row.getAttribute('data-price'));
-                const qtyInput = row.querySelector('.qty-field');
-                let qty = parseInt(qtyInput.value) || 0;
-
-                if (qty < 0) {
-                    qty = 0;
-                    qtyInput.value = 0;
-                }
-
-                const subtotal = price * qty;
-                row.querySelector('.subtotal-display').textContent = '₹' + subtotal.toFixed(2);
-
-                if (qty > 0) {
-                    grandTotal += subtotal;
-                    selectedCount++;
-                    receiptHtml += `
-                        <div class="receipt-item">
-                            <span class="item-details">${name} <span style="color: var(--text-muted)">x${qty}</span></span>
-                            <span class="item-cost">₹${subtotal.toFixed(2)}</span>
-                        </div>
-                    `;
-                }
-            });
-
-            if (selectedCount === 0) {
+        function renderActiveItems() {
+            const keys = Object.keys(activeItems);
+            
+            if (keys.length === 0) {
+                calculatorEmptyState.style.display = 'block';
+                activeItemsTableContainer.style.display = 'none';
                 receiptItemsContainer.innerHTML = '<div class="empty-receipt">No items selected</div>';
                 grandTotalDisplay.textContent = '₹0.00';
                 btnOpenSendModal.disabled = true;
-            } else {
-                receiptItemsContainer.innerHTML = receiptHtml;
-                grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
-                btnOpenSendModal.disabled = false;
+                return;
             }
+
+            calculatorEmptyState.style.display = 'none';
+            activeItemsTableContainer.style.display = 'block';
+
+            let bodyHtml = '';
+            let receiptHtml = '';
+            let grandTotal = 0;
+
+            keys.forEach(id => {
+                const item = activeItems[id];
+                const subtotal = item.price * item.qty;
+                grandTotal += subtotal;
+
+                bodyHtml += `
+                    <tr class="item-row" data-id="${item.id}" data-name="${item.name}" data-price="${item.price}">
+                        <td data-label="Item Name" style="font-weight: 600;">${item.name}</td>
+                        <td data-label="Price" style="text-align: right; font-weight: 600;">₹${item.price.toFixed(2)}</td>
+                        <td data-label="Quantity" style="text-align: center;">
+                            <div style="display: flex; justify-content: center; width: 100%;">
+                                <div class="qty-input-container">
+                                    <button type="button" class="qty-btn dec-btn" data-id="${item.id}">-</button>
+                                    <input type="number" 
+                                           class="qty-field" 
+                                           value="${item.qty}" 
+                                           min="1" 
+                                           max="999" 
+                                           data-id="${item.id}"
+                                           aria-label="Quantity for ${item.name}">
+                                    <button type="button" class="qty-btn inc-btn" data-id="${item.id}">+</button>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Subtotal" style="text-align: right; font-weight: 700; color: var(--primary-red);" class="subtotal-display">
+                            ₹${subtotal.toFixed(2)}
+                        </td>
+                        <td data-label="Action" style="text-align: center;">
+                            <button type="button" class="btn btn-secondary remove-btn" data-id="${item.id}" style="padding: 0.4rem; min-width: auto; line-height: 1; border-color: #F8B4B4; color: var(--primary-red); background: none; display: inline-flex; align-items: center; justify-content: center;">
+                                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+
+                receiptHtml += `
+                    <div class="receipt-item">
+                        <span class="item-details">${item.name} <span style="color: var(--text-muted)">x${item.qty}</span></span>
+                        <span class="item-cost">₹${subtotal.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+
+            activeItemsBody.innerHTML = bodyHtml;
+            receiptItemsContainer.innerHTML = receiptHtml;
+            grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
+            btnOpenSendModal.disabled = false;
+
+            // Attach event listeners to dynamic elements
+            attachEventListeners();
         }
 
-        // Add Event Listeners for qty change
-        rows.forEach(row => {
-            const decBtn = row.querySelector('.dec-btn');
-            const incBtn = row.querySelector('.inc-btn');
-            const qtyInput = row.querySelector('.qty-field');
+        function attachEventListeners() {
+            // Decrement Buttons
+            activeItemsBody.querySelectorAll('.dec-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    if (activeItems[id] && activeItems[id].qty > 1) {
+                        activeItems[id].qty--;
+                        renderActiveItems();
+                    }
+                });
+            });
 
-            decBtn.addEventListener('click', () => {
-                let val = parseInt(qtyInput.value) || 0;
-                if (val > 0) {
-                    qtyInput.value = val - 1;
-                    updateTotals();
+            // Increment Buttons
+            activeItemsBody.querySelectorAll('.inc-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    if (activeItems[id]) {
+                        activeItems[id].qty++;
+                        renderActiveItems();
+                    }
+                });
+            });
+
+            // Quantity direct input fields
+            activeItemsBody.querySelectorAll('.qty-field').forEach(input => {
+                input.addEventListener('change', () => {
+                    const id = input.getAttribute('data-id');
+                    let val = parseInt(input.value) || 1;
+                    if (val < 1) val = 1;
+                    if (activeItems[id]) {
+                        activeItems[id].qty = val;
+                        renderActiveItems();
+                    }
+                });
+                
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === '.') {
+                        e.preventDefault();
+                    }
+                });
+            });
+
+            // Remove Buttons
+            activeItemsBody.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    if (activeItems[id]) {
+                        delete activeItems[id];
+                        renderActiveItems();
+                    }
+                });
+            });
+        }
+
+        // Add item from dropdown
+        if (btnAddItem) {
+            btnAddItem.addEventListener('click', () => {
+                const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+                if (!selectedOption || selectedOption.value === "") {
+                    showNotification('Please select a food item from the list.', 'error');
+                    return;
                 }
-            });
 
-            incBtn.addEventListener('click', () => {
-                let val = parseInt(qtyInput.value) || 0;
-                qtyInput.value = val + 1;
-                updateTotals();
-            });
+                const initialQtyInput = document.getElementById('initialQtySelect');
+                let initialQty = parseInt(initialQtyInput.value) || 1;
+                if (initialQty < 1) initialQty = 1;
 
-            qtyInput.addEventListener('input', () => {
-                updateTotals();
-            });
+                const id = selectedOption.value;
+                const name = selectedOption.getAttribute('data-name');
+                const price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
 
-            // Prevent letters in typing but allow typing backspace or negative sign correctly handle
-            qtyInput.addEventListener('keydown', (e) => {
-                if (e.key === '-' || e.key === 'e') {
-                    e.preventDefault();
+                if (activeItems[id]) {
+                    activeItems[id].qty += initialQty;
+                } else {
+                    activeItems[id] = { id, name, price, qty: initialQty };
                 }
-            });
-        });
 
-        // Reset
+                renderActiveItems();
+                itemSelect.selectedIndex = 0; // Reset select dropdown
+                initialQtyInput.value = 1; // Reset quantity select field to 1
+                showNotification(`Added ${initialQty}x ${name} to bill!`);
+            });
+        }
+
+        // Reset Calculator
         btnClear.addEventListener('click', () => {
-            rows.forEach(row => {
-                row.querySelector('.qty-field').value = 0;
-            });
-            updateTotals();
+            activeItems = {};
+            renderActiveItems();
         });
 
         // Show WhatsApp Send Modal
@@ -473,17 +567,11 @@
             msgText += '-----------------------------\n';
             let grandTotal = 0;
 
-            rows.forEach(row => {
-                const name = row.getAttribute('data-name');
-                const price = parseFloat(row.getAttribute('data-price'));
-                const qtyInput = row.querySelector('.qty-field');
-                const qty = parseInt(qtyInput.value) || 0;
-
-                if (qty > 0) {
-                    const subtotal = price * qty;
-                    grandTotal += subtotal;
-                    msgText += `${name} x${qty}: ₹${subtotal.toFixed(2)}\n`;
-                }
+            Object.keys(activeItems).forEach(id => {
+                const item = activeItems[id];
+                const subtotal = item.price * item.qty;
+                grandTotal += subtotal;
+                msgText += `${item.name} x${item.qty}: ₹${subtotal.toFixed(2)}\n`;
             });
 
             msgText += '-----------------------------\n';
