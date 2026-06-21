@@ -253,10 +253,136 @@
     .modal-footer .btn {
         flex: 1;
     }
+
+    /* Orders section styling inside calculator */
+    .orders-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .order-card {
+        border: 1px solid var(--border-gray);
+        border-radius: var(--radius-lg);
+        background-color: var(--bg-white);
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .order-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .order-header {
+        background-color: var(--bg-light);
+        padding: 0.85rem 1.1rem;
+        border-bottom: 1px solid var(--border-gray);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .order-title {
+        font-weight: 800;
+        font-size: 1rem;
+        color: var(--text-dark);
+    }
+
+    .order-time {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .order-body {
+        padding: 1.1rem;
+        flex-grow: 1;
+    }
+
+    .order-items-list {
+        margin-bottom: 0.85rem;
+        border-bottom: 1px dashed var(--border-gray);
+        padding-bottom: 0.75rem;
+        max-height: 120px;
+        overflow-y: auto;
+    }
+
+    .order-item-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .order-item-name {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .order-item-qty {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        margin-left: 0.2rem;
+    }
+
+    .order-item-subtotal {
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .order-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 0.25rem;
+    }
+
+    .order-total-label {
+        font-weight: 800;
+        font-size: 0.8rem;
+        color: var(--primary-red);
+        text-transform: uppercase;
+    }
+
+    .order-total-val {
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: var(--primary-red);
+    }
+
+    .order-actions {
+        padding: 0.85rem 1.1rem;
+        background-color: var(--bg-light);
+        border-top: 1px solid var(--border-gray);
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .order-actions .btn {
+        flex: 1;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        height: auto;
+        min-width: auto;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Editing Order Banner -->
+<div id="editingBanner" style="display: none; background-color: #FFF3CD; border: 1px solid #FFEBAA; color: #856404; padding: 1rem 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-weight: 600; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"></path></svg>
+        <span id="editingBannerText">Editing Order</span>
+    </div>
+    <button type="button" id="btnExitEdit" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; min-width: auto; height: auto;">Cancel Edit</button>
+</div>
+
 <div class="calculator-layout">
     <!-- Left side: Select & Add items -->
     <div class="card">
@@ -277,9 +403,20 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div style="width: 100px;">
+                    <div style="width: 150px;">
                         <label class="form-label" for="initialQtySelect" style="font-weight: 700; margin-bottom: 0.5rem; display: block;">Quantity</label>
-                        <input type="number" id="initialQtySelect" class="form-input" value="0" min="0" max="999" style="width: 100%; height: 46px; border-radius: var(--radius-md); border: 1px solid var(--border-gray); font-family: var(--font-family); font-size: 1rem; text-align: center; padding: 0.5rem;">
+                        <div class="qty-input-container" style="width: 100%; height: 46px; gap: 0;">
+                            <button type="button" class="qty-btn" id="btnInitialDec" style="height: 46px; width: 44px; border-radius: var(--radius-md) 0 0 var(--radius-md); border: 1px solid var(--border-gray); border-right: none; font-size: 1.2rem; font-weight: 800;">-</button>
+                            <input type="number" 
+                                   id="initialQtySelect" 
+                                   class="qty-field" 
+                                   value="" 
+                                   placeholder="-"
+                                   min="1" 
+                                   max="999" 
+                                   style="width: 62px; height: 46px; border: 1px solid var(--border-gray); border-radius: 0; text-align: center; font-weight: 600; font-family: var(--font-family); font-size: 1.1rem; outline: none; transition: all 0.2s ease;">
+                            <button type="button" class="qty-btn" id="btnInitialInc" style="height: 46px; width: 44px; border-radius: 0 var(--radius-md) var(--radius-md) 0; border: 1px solid var(--border-gray); border-left: none; font-size: 1.2rem; font-weight: 800;">+</button>
+                        </div>
                     </div>
                     <button type="button" class="btn btn-primary" id="btnAddItem" style="height: 46px; min-width: 120px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;">
                         <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>
@@ -326,6 +463,12 @@
             Bill Summary
         </div>
         <div class="summary-body">
+            <!-- Customer Name / Reference Input -->
+            <div style="margin-bottom: 1.25rem;">
+                <label class="form-label" for="customerNameInput" style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.35rem; display: block;">Customer Name / Table Ref</label>
+                <input type="text" id="customerNameInput" class="form-input" placeholder="e.g., Table 4, Amit" style="font-size: 0.95rem; padding: 0.6rem 0.85rem; width: 100%; border: 1px solid var(--border-gray); border-radius: var(--radius-md); font-family: var(--font-family);">
+            </div>
+
             <div class="receipt-items" id="receiptItems">
                 <div class="empty-receipt">No items selected</div>
             </div>
@@ -339,9 +482,34 @@
                 <button type="button" class="btn btn-primary" id="btnOpenSendModal" disabled>
                     Send Bill via WhatsApp
                 </button>
+                <button type="button" class="btn btn-outline" id="btnSaveOrder" disabled style="border-color: #4CAF50; color: #4CAF50; transition: all 0.2s;">
+                    <svg style="width: 18px; height: 18px; fill: currentColor; display: inline-block; vertical-align: middle; margin-right: 4px;" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                    <span id="btnSaveOrderText">Save Order</span>
+                </button>
                 <button type="button" class="btn btn-secondary" id="btnClear">
                     Reset Calculator
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Saved Orders Section -->
+<div class="card" style="margin-top: 2.5rem; border: 1px solid var(--border-gray);">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-gray); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; background-color: var(--bg-light);">
+        <div>
+            <h2 style="margin-bottom: 0.25rem; font-size: 1.35rem; color: var(--text-dark);">Active Saved Orders</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Unpaid bills and active tables currently saved in the session.</p>
+        </div>
+        <button type="button" class="btn btn-secondary" id="btnRefreshOrders" style="padding: 0.5rem 1rem; font-size: 0.85rem; height: auto; min-width: auto; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; border-color: var(--border-gray);">
+            <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"></path></svg>
+            Refresh
+        </button>
+    </div>
+    <div style="padding: 1.5rem;">
+        <div id="ordersGrid" class="orders-grid">
+            <div style="text-align: center; padding: 2rem; color: var(--text-muted); grid-column: 1 / -1;">
+                Loading saved orders...
             </div>
         </div>
     </div>
@@ -396,9 +564,44 @@
         const grandTotalDisplay = document.getElementById('grandTotal');
         const btnOpenSendModal = document.getElementById('btnOpenSendModal');
         const btnClear = document.getElementById('btnClear');
+        const btnSaveOrder = document.getElementById('btnSaveOrder');
+        const btnSaveOrderText = document.getElementById('btnSaveOrderText');
+        const customerNameInput = document.getElementById('customerNameInput');
+        const editingBanner = document.getElementById('editingBanner');
+        const editingBannerText = document.getElementById('editingBannerText');
+        const btnExitEdit = document.getElementById('btnExitEdit');
+        const btnRefreshOrders = document.getElementById('btnRefreshOrders');
         
         let activeItems = {}; // key: item_id, value: { id, name, price, qty }
         let currentWhatsAppMessage = '';
+        let editingOrderId = null;
+        let savedOrders = [];
+
+        // Load edited order data from backend if present on page load
+        const editOrderData = {% if edit_order_json %}{{ edit_order_json|safe }}{% else %}null{% endif %};
+        if (editOrderData) {
+            editingOrderId = editOrderData.id;
+            Object.keys(editOrderData.items || {}).forEach(key => {
+                const item = editOrderData.items[key];
+                activeItems[key] = {
+                    id: item.id,
+                    name: item.name,
+                    price: parseFloat(item.price) || 0,
+                    qty: parseInt(item.qty) || 1
+                };
+            });
+            
+            if (customerNameInput) {
+                customerNameInput.value = editOrderData.name || '';
+            }
+            if (editingBanner && editingBannerText) {
+                editingBanner.style.display = 'flex';
+                editingBannerText.textContent = `Editing: ${editOrderData.name || 'Order'}`;
+            }
+            if (btnSaveOrderText) {
+                btnSaveOrderText.textContent = 'Update Order';
+            }
+        }
 
         function renderActiveItems() {
             const keys = Object.keys(activeItems);
@@ -409,6 +612,7 @@
                 receiptItemsContainer.innerHTML = '<div class="empty-receipt">No items selected</div>';
                 grandTotalDisplay.textContent = '₹0.00';
                 btnOpenSendModal.disabled = true;
+                if (btnSaveOrder) btnSaveOrder.disabled = true;
                 return;
             }
 
@@ -421,20 +625,22 @@
 
             keys.forEach(id => {
                 const item = activeItems[id];
-                const subtotal = item.price * item.qty;
+                const price = parseFloat(item.price) || 0;
+                const qty = parseInt(item.qty) || 1;
+                const subtotal = price * qty;
                 grandTotal += subtotal;
 
                 bodyHtml += `
-                    <tr class="item-row" data-id="${item.id}" data-name="${item.name}" data-price="${item.price}">
+                    <tr class="item-row" data-id="${item.id}" data-name="${item.name}" data-price="${price}">
                         <td data-label="Item Name" style="font-weight: 600;">${item.name}</td>
-                        <td data-label="Price" style="text-align: right; font-weight: 600;">₹${item.price.toFixed(2)}</td>
+                        <td data-label="Price" style="text-align: right; font-weight: 600;">₹${price.toFixed(2)}</td>
                         <td data-label="Quantity" style="text-align: center;">
                             <div style="display: flex; justify-content: center; width: 100%;">
                                 <div class="qty-input-container">
                                     <button type="button" class="qty-btn dec-btn" data-id="${item.id}">-</button>
                                     <input type="number" 
                                            class="qty-field" 
-                                           value="${item.qty}" 
+                                           value="${qty}" 
                                            min="1" 
                                            max="999" 
                                            data-id="${item.id}"
@@ -456,7 +662,7 @@
 
                 receiptHtml += `
                     <div class="receipt-item">
-                        <span class="item-details">${item.name} <span style="color: var(--text-muted)">x${item.qty}</span></span>
+                        <span class="item-details">${item.name} <span style="color: var(--text-muted)">x${qty}</span></span>
                         <span class="item-cost">₹${subtotal.toFixed(2)}</span>
                     </div>
                 `;
@@ -466,6 +672,7 @@
             receiptItemsContainer.innerHTML = receiptHtml;
             grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
             btnOpenSendModal.disabled = false;
+            if (btnSaveOrder) btnSaveOrder.disabled = false;
 
             // Attach event listeners to dynamic elements
             attachEventListeners();
@@ -525,15 +732,42 @@
             });
         }
 
-        // Reset quantity to 0 when item selection changes
-        if (itemSelect) {
-            itemSelect.addEventListener('change', () => {
-                const initialQtyInput = document.getElementById('initialQtySelect');
-                if (initialQtyInput) {
-                    initialQtyInput.value = 0;
+        // Cancel Edit Button
+        if (btnExitEdit) {
+            btnExitEdit.addEventListener('click', () => {
+                exitEditMode();
+            });
+        }
+
+        // Setup Initial Quantity Plus/Minus Controls
+        const btnInitialDec = document.getElementById('btnInitialDec');
+        const btnInitialInc = document.getElementById('btnInitialInc');
+        const initialQtySelect = document.getElementById('initialQtySelect');
+
+        if (btnInitialDec && btnInitialInc && initialQtySelect) {
+            btnInitialDec.addEventListener('click', () => {
+                let val = parseInt(initialQtySelect.value);
+                if (isNaN(val)) {
+                    initialQtySelect.value = '';
+                } else if (val > 1) {
+                    initialQtySelect.value = val - 1;
+                } else {
+                    initialQtySelect.value = '';
+                }
+            });
+
+            btnInitialInc.addEventListener('click', () => {
+                let val = parseInt(initialQtySelect.value);
+                if (isNaN(val)) {
+                    initialQtySelect.value = 1;
+                } else if (val < 999) {
+                    initialQtySelect.value = val + 1;
                 }
             });
         }
+
+        // Note: The dropdown selection change listener was removed to satisfy: 
+        // "dont refrsh selected quantitiy when select ime in calcuator"
 
         // Add item from dropdown
         if (btnAddItem) {
@@ -544,13 +778,8 @@
                     return;
                 }
 
-                const initialQtyInput = document.getElementById('initialQtySelect');
-                let initialQty = parseInt(initialQtyInput.value);
-                if (isNaN(initialQty)) {
-                    initialQty = 0;
-                }
-
-                if (initialQty <= 0) {
+                let initialQty = parseInt(initialQtySelect.value);
+                if (isNaN(initialQty) || initialQty <= 0) {
                     showNotification('Quantity must be greater than 0 to add to bill.', 'error');
                     return;
                 }
@@ -567,7 +796,7 @@
 
                 renderActiveItems();
                 itemSelect.selectedIndex = 0; // Reset select dropdown
-                initialQtyInput.value = 0; // Reset quantity select field to 0
+                initialQtySelect.value = ''; // Reset quantity select field to empty
                 showNotification(`Added ${initialQty}x ${name} to bill!`);
             });
         }
@@ -575,8 +804,255 @@
         // Reset Calculator
         btnClear.addEventListener('click', () => {
             activeItems = {};
+            if (customerNameInput && !editingOrderId) {
+                customerNameInput.value = '';
+            }
             renderActiveItems();
         });
+
+        // Exit Edit Mode
+        function exitEditMode() {
+            editingOrderId = null;
+            activeItems = {};
+            if (customerNameInput) {
+                customerNameInput.value = '';
+            }
+            if (editingBanner) {
+                editingBanner.style.display = 'none';
+            }
+            if (btnSaveOrderText) {
+                btnSaveOrderText.textContent = 'Save Order';
+            }
+            renderActiveItems();
+        }
+
+        // Save Order to Session
+        if (btnSaveOrder) {
+            btnSaveOrder.addEventListener('click', () => {
+                const customerName = customerNameInput ? customerNameInput.value.trim() : '';
+                btnSaveOrder.disabled = true;
+                const originalContent = btnSaveOrder.innerHTML;
+                btnSaveOrder.textContent = 'Saving...';
+
+                fetch("{% url 'save_order' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        items: activeItems,
+                        customer_name: customerName,
+                        order_id: editingOrderId
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw new Error(err.error || 'Server error'); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    btnSaveOrder.disabled = false;
+                    btnSaveOrder.innerHTML = originalContent;
+                    if (data.success) {
+                        showNotification(editingOrderId ? 'Order updated successfully!' : 'Order saved successfully!');
+                        exitEditMode();
+                        loadOrders();
+                    } else {
+                        showNotification(data.error || 'Failed to save order.', 'error');
+                    }
+                })
+                .catch(error => {
+                    btnSaveOrder.disabled = false;
+                    btnSaveOrder.innerHTML = originalContent;
+                    showNotification(error.message || 'Connection error.', 'error');
+                });
+            });
+        }
+
+        // AJAX active saved orders loading & rendering
+        function loadOrders() {
+            const ordersGrid = document.getElementById('ordersGrid');
+            if (!ordersGrid) return;
+
+            fetch("{% url 'orders_json' %}")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        savedOrders = data.orders || [];
+                        renderOrders();
+                    } else {
+                        ordersGrid.innerHTML = `<div style="text-align: center; color: var(--primary-red); grid-column: 1 / -1; padding: 1rem;">Failed to load saved orders.</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading orders:', error);
+                    ordersGrid.innerHTML = `<div style="text-align: center; color: var(--primary-red); grid-column: 1 / -1; padding: 1rem;">Connection error loading orders.</div>`;
+                });
+        }
+
+        function renderOrders() {
+            const ordersGrid = document.getElementById('ordersGrid');
+            if (!ordersGrid) return;
+
+            if (savedOrders.length === 0) {
+                ordersGrid.innerHTML = `
+                    <div class="empty-orders">
+                        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.03 0 1.9.693 2.166 1.638m-7.377 2.24c0-.071.002-.141.006-.212m9.01 0c.004.07.006.141.006.212m-9.01 0H18m-9 0v11.25a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25V6M9 6h9v12H9V6z"></path>
+                        </svg>
+                        <h3 style="color: var(--text-dark); font-weight: 700; margin-bottom: 0.5rem; font-size: 1rem;">No Active Orders</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">There are no saved unpaid orders in this session.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            savedOrders.forEach(order => {
+                let itemsHtml = '';
+                Object.keys(order.items || {}).forEach(key => {
+                    const item = order.items[key];
+                    const price = parseFloat(item.price) || 0;
+                    const subtotal = price * item.qty;
+                    itemsHtml += `
+                        <div class="order-item-row">
+                            <div>
+                                <span class="order-item-name">${item.name}</span>
+                                <span class="order-item-qty">x${item.qty}</span>
+                            </div>
+                            <span class="order-item-subtotal">₹${subtotal.toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+
+                const totalVal = parseFloat(order.total) || 0;
+
+                html += `
+                    <div class="order-card" data-order-id="${order.id}">
+                        <div class="order-header">
+                            <span class="order-title">${order.name || 'Quick Bill'}</span>
+                            <span class="order-time">${order.created_at}</span>
+                        </div>
+                        <div class="order-body">
+                            <div class="order-items-list">
+                                ${itemsHtml}
+                            </div>
+                            <div class="order-total-row">
+                                <span class="order-total-label">Grand Total</span>
+                                <span class="order-total-val">₹${totalVal.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <div class="order-actions">
+                            <button type="button" class="btn btn-secondary btn-edit-order" data-order-id="${order.id}">
+                                Edit
+                            </button>
+                            <button type="button" class="btn btn-primary btn-pay-order" data-order-id="${order.id}" style="background-color: #4CAF50; border-color: #4CAF50; color: white;">
+                                Set Paid
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            ordersGrid.innerHTML = html;
+
+            // Attach inline edit handlers
+            ordersGrid.querySelectorAll('.btn-edit-order').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-order-id');
+                    editOrderInline(id);
+                });
+            });
+
+            // Attach inline pay/remove handlers
+            ordersGrid.querySelectorAll('.btn-pay-order').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-order-id');
+                    payOrderInline(id);
+                });
+            });
+        }
+
+        function editOrderInline(id) {
+            const order = savedOrders.find(o => String(o.id) === String(id));
+            if (!order) return;
+
+            activeItems = {};
+            Object.keys(order.items || {}).forEach(key => {
+                const item = order.items[key];
+                activeItems[key] = {
+                    id: item.id,
+                    name: item.name,
+                    price: parseFloat(item.price) || 0,
+                    qty: parseInt(item.qty) || 1
+                };
+            });
+
+            editingOrderId = order.id;
+
+            if (customerNameInput) {
+                customerNameInput.value = order.name || '';
+            }
+            if (editingBanner && editingBannerText) {
+                editingBanner.style.display = 'flex';
+                editingBannerText.textContent = `Editing: ${order.name || 'Order'}`;
+            }
+            if (btnSaveOrderText) {
+                btnSaveOrderText.textContent = 'Update Order';
+            }
+
+            renderActiveItems();
+            
+            // Scroll smoothly to top of calculator
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showNotification(`Loaded ${order.name || 'Order'} into calculator.`);
+        }
+
+        function payOrderInline(id) {
+            const btn = document.querySelector(`.order-card[data-order-id="${id}"] .btn-pay-order`);
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Updating...';
+            }
+
+            const payUrl = `/orders/pay/${id}/`;
+
+            fetch(payUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to set paid.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                showNotification('Order marked as Paid and removed from session.');
+                if (String(editingOrderId) === String(id)) {
+                    exitEditMode();
+                }
+                loadOrders();
+            })
+            .catch(error => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Set Paid';
+                }
+                showNotification(error.message || 'Error occurred.', 'error');
+            });
+        }
+
+        if (btnRefreshOrders) {
+            btnRefreshOrders.addEventListener('click', () => {
+                loadOrders();
+            });
+        }
 
         // Show WhatsApp Send Modal
         btnOpenSendModal.addEventListener('click', () => {
@@ -586,9 +1062,11 @@
 
             Object.keys(activeItems).forEach(id => {
                 const item = activeItems[id];
-                const subtotal = item.price * item.qty;
+                const price = parseFloat(item.price) || 0;
+                const qty = parseInt(item.qty) || 1;
+                const subtotal = price * qty;
                 grandTotal += subtotal;
-                msgText += `${item.name} x${item.qty}: ₹${subtotal.toFixed(2)}\n`;
+                msgText += `${item.name} x${qty}: ₹${subtotal.toFixed(2)}\n`;
             });
 
             msgText += '-----------------------------\n';
@@ -614,13 +1092,11 @@
             btnSend.disabled = true;
             btnSend.textContent = 'Sending...';
             
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            
             fetch("{% url 'send_whatsapp' %}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
+                    'X-CSRFToken': '{{ csrf_token }}'
                 },
                 body: JSON.stringify({
                     phone: cleanNum,
@@ -651,34 +1127,38 @@
             });
         });
 
-        function showNotification(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = 'fade-in';
-            toast.style.position = 'fixed';
-            toast.style.bottom = '20px';
-            toast.style.right = '20px';
-            toast.style.padding = '1rem 1.5rem';
-            toast.style.borderRadius = 'var(--radius-md)';
-            toast.style.backgroundColor = type === 'success' ? '#DEF7EC' : '#FDE8E8';
-            toast.style.color = type === 'success' ? '#03543F' : '#9B1C1C';
-            toast.style.border = type === 'success' ? '1px solid #BCF0DA' : '1px solid #F8B4B4';
-            toast.style.boxShadow = 'var(--shadow-lg)';
-            toast.style.fontWeight = '600';
-            toast.style.zIndex = '9999';
-            toast.textContent = message;
-            
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.transition = 'opacity 0.5s ease';
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 500);
-            }, 4000);
-        }
+        // Initial loading of active items and saved orders on page load
+        renderActiveItems();
+        loadOrders();
     });
 
     function closeModal() {
         document.getElementById('whatsappModal').style.display = 'none';
+    }
+
+    function showNotification(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = 'fade-in';
+        toast.style.position = 'fixed';
+        toast.style.bottom = '20px';
+        toast.style.right = '20px';
+        toast.style.padding = '1rem 1.5rem';
+        toast.style.borderRadius = 'var(--radius-md)';
+        toast.style.backgroundColor = type === 'success' ? '#DEF7EC' : '#FDE8E8';
+        toast.style.color = type === 'success' ? '#03543F' : '#9B1C1C';
+        toast.style.border = type === 'success' ? '1px solid #BCF0DA' : '1px solid #F8B4B4';
+        toast.style.boxShadow = 'var(--shadow-lg)';
+        toast.style.fontWeight = '600';
+        toast.style.zIndex = '9999';
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.transition = 'opacity 0.5s ease';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 500);
+        }, 4000);
     }
 </script>
 {% endblock %}

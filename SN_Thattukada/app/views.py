@@ -26,7 +26,113 @@ def add_item_view(request):
 
 def calculate_view(request):
     items = Item.objects.all().order_by('name')
-    return render(request, 'app/calculate.html', {'items': items})
+    edit_id = request.GET.get('edit')
+    edit_order = None
+    edit_order_json = None
+    if edit_id:
+        orders = request.session.get('orders', {})
+        edit_order = orders.get(str(edit_id))
+        if edit_order:
+            # Create a clean copy to JSON serialize
+            edit_order_json = json.dumps(edit_order)
+            
+    return render(request, 'app/calculate.html', {
+        'items': items,
+        'edit_order': edit_order,
+        'edit_order_json': edit_order_json
+    })
+
+def orders_list_view(request):
+    return redirect('calculate')
+
+def orders_json_view(request):
+    orders_dict = request.session.get('orders', {})
+    orders_list = sorted(orders_dict.values(), key=lambda x: x.get('id', ''), reverse=True)
+    return JsonResponse({'success': True, 'orders': orders_list})
+
+
+@csrf_protect
+@require_POST
+def save_order_view(request):
+    try:
+        data = json.loads(request.body)
+        items = data.get('items', {})
+        customer_name = data.get('customer_name', '').strip()
+        order_id = data.get('order_id')
+        
+        if not items:
+            return JsonResponse({'success': False, 'error': 'Cannot save an empty order.'}, status=400)
+        
+        # Calculate total and store subtotal per item
+        total = 0.0
+        for item_id, item in items.items():
+            price = float(item.get('price', 0.0))
+            qty = int(float(item.get('qty', 1)))
+            sub = price * qty
+            item['price'] = price
+            item['qty'] = qty
+            item['subtotal'] = sub
+            total += sub
+            
+        orders = request.session.get('orders', {})
+        
+        import datetime
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %I:%M %p")
+        
+        if order_id and str(order_id) in orders:
+            order_id_str = str(order_id)
+            orders[order_id_str]['items'] = items
+            orders[order_id_str]['total'] = total
+            if customer_name:
+                orders[order_id_str]['name'] = customer_name
+            saved_id = order_id_str
+        else:
+            import time
+            new_id = str(int(time.time() * 1000))
+            if not customer_name:
+                order_num = len(orders) + 1
+                customer_name = f"Order #{order_num}"
+            orders[new_id] = {
+                'id': new_id,
+                'name': customer_name,
+                'items': items,
+                'total': total,
+                'created_at': now_str
+            }
+            saved_id = new_id
+            
+        request.session['orders'] = orders
+        request.session.modified = True
+        
+        return JsonResponse({'success': True, 'order_id': saved_id})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_protect
+@require_POST
+def pay_order_view(request, order_id):
+    orders = request.session.get('orders', {})
+    order_id_str = str(order_id)
+    success = False
+    message = ""
+    if order_id_str in orders:
+        del orders[order_id_str]
+        request.session['orders'] = orders
+        request.session.modified = True
+        success = True
+        message = "Order marked as Paid and removed from session."
+    else:
+        message = "Order not found."
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('accept') == 'application/json' or request.content_type == 'application/json':
+        return JsonResponse({'success': success, 'message': message})
+
+    if success:
+        messages.success(request, message)
+    else:
+        messages.error(request, message)
+    return redirect('calculate')
+
 
 def edit_item_view(request, pk):
     item = get_object_or_404(Item, pk=pk)

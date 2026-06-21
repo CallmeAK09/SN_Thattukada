@@ -1,0 +1,207 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Saved Orders - SN Thattukada{% endblock %}
+
+{% block nav_orders %}active{% endblock %}
+{% block nav_orders_mobile %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+    .orders-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 2rem;
+        margin-top: 1.5rem;
+    }
+
+    .order-card {
+        border: 1px solid var(--border-gray);
+        border-radius: var(--radius-lg);
+        background-color: var(--bg-white);
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .order-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .order-header {
+        background-color: var(--bg-light);
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border-gray);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .order-title {
+        font-weight: 800;
+        font-size: 1.15rem;
+        color: var(--text-dark);
+    }
+
+    .order-time {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .order-body {
+        padding: 1.5rem;
+        flex-grow: 1;
+    }
+
+    .order-items-list {
+        margin-bottom: 1.25rem;
+        border-bottom: 1px dashed var(--border-gray);
+        padding-bottom: 1rem;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    .order-item-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .order-item-name {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .order-item-qty {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin-left: 0.25rem;
+    }
+
+    .order-item-subtotal {
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .order-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 0.5rem;
+    }
+
+    .order-total-label {
+        font-weight: 800;
+        font-size: 0.9rem;
+        color: var(--primary-red);
+        text-transform: uppercase;
+    }
+
+    .order-total-val {
+        font-weight: 800;
+        font-size: 1.5rem;
+        color: var(--primary-red);
+    }
+
+    .order-actions {
+        padding: 1.25rem 1.5rem;
+        background-color: var(--bg-light);
+        border-top: 1px solid var(--border-gray);
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .order-actions form {
+        flex: 1;
+        margin: 0;
+    }
+
+    .order-actions .btn {
+        width: 100%;
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .empty-orders {
+        text-align: center;
+        padding: 5rem 2rem;
+        color: var(--text-muted);
+    }
+
+    .empty-orders svg {
+        width: 80px;
+        height: 80px;
+        color: var(--border-gray);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="orders-title-section" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="margin-bottom: 0.25rem;">Active Orders</h1>
+        <p style="color: var(--text-muted);">Manage unpaid active tables and customer bills currently saved in the session.</p>
+    </div>
+    <a href="{% url 'calculate' %}" class="btn btn-primary">
+        <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>
+        New Calculation
+    </a>
+</div>
+
+{% if orders %}
+    <div class="orders-grid">
+        {% for order in orders %}
+            <div class="order-card">
+                <div class="order-header">
+                    <span class="order-title">{{ order.name }}</span>
+                    <span class="order-time">{{ order.created_at }}</span>
+                </div>
+                <div class="order-body">
+                    <div class="order-items-list">
+                        {% for key, item in order.items.items %}
+                            <div class="order-item-row">
+                                <div>
+                                    <span class="order-item-name">{{ item.name }}</span>
+                                    <span class="order-item-qty">x{{ item.qty }}</span>
+                                </div>
+                                <span class="order-item-subtotal">₹{{ item.subtotal|floatformat:2 }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="order-total-row">
+                        <span class="order-total-label">Grand Total</span>
+                        <span class="order-total-val">₹{{ order.total|floatformat:2 }}</span>
+                    </div>
+                </div>
+                <div class="order-actions">
+                    <a href="{% url 'calculate' %}?edit={{ order.id }}" class="btn btn-secondary" style="flex: 1;">
+                        Edit Order
+                    </a>
+                    <form action="{% url 'pay_order' order.id %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary" style="background-color: #4CAF50; box-shadow: 0 4px 6px -1px rgba(76, 175, 80, 0.2);">
+                            Set Paid
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card">
+        <div class="empty-orders">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.03 0 1.9.693 2.166 1.638m-7.377 2.24c0-.071.002-.141.006-.212m9.01 0c.004.07.006.141.006.212m-9.01 0H18m-9 0v11.25a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25V6M9 6h9v12H9V6z"></path>
+            </svg>
+            <h3 style="color: var(--text-dark); font-weight: 700; margin-bottom: 0.5rem;">No Saved Orders</h3>
+            <p>There are no active unpaid orders in your session. Start by calculating a bill!</p>
+            <a href="{% url 'calculate' %}" class="btn btn-primary" style="margin-top: 1.5rem;">Calculate a Bill</a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

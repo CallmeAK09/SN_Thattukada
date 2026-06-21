@@ -132,3 +132,97 @@ class ViewsTest(TestCase):
         }), content_type='application/json')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()['success'], False)
+
+    def test_orders_list_view_redirect(self):
+        response = self.client.get(reverse('orders_list'))
+        self.assertRedirects(response, reverse('calculate'))
+
+    def test_orders_json_view_empty(self):
+        response = self.client.get(reverse('orders_json'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['orders'], [])
+
+    def test_save_order_view_create_and_list(self):
+        # Save a new order
+        url = reverse('save_order')
+        order_data = {
+            'customer_name': 'Table 5',
+            'items': {
+                '1': {'id': '1', 'name': 'Chilli Chicken', 'price': '120.00', 'qty': 2}
+            }
+        }
+        response = self.client.post(url, json.dumps(order_data), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertTrue(json_data['success'])
+        order_id = json_data['order_id']
+
+        # Verify it lists in the orders JSON endpoint
+        response = self.client.get(reverse('orders_json'))
+        self.assertEqual(response.status_code, 200)
+        orders = response.json()['orders']
+        self.assertEqual(len(orders), 1)
+        self.assertEqual(orders[0]['name'], 'Table 5')
+        self.assertEqual(orders[0]['items']['1']['name'], 'Chilli Chicken')
+        self.assertEqual(float(orders[0]['total']), 240.0)
+
+    def test_save_order_view_update(self):
+        # First save an order in the session
+        session = self.client.session
+        session['orders'] = {
+            'test_id': {
+                'id': 'test_id',
+                'name': 'Table 10',
+                'items': {
+                    '1': {'id': '1', 'name': 'Chilli Chicken', 'price': '120.00', 'qty': 1, 'subtotal': 120.0}
+                },
+                'total': 120.0,
+                'created_at': '2026-06-21 08:30 PM'
+            }
+        }
+        session.save()
+
+        # Update it via POST
+        url = reverse('save_order')
+        order_data = {
+            'order_id': 'test_id',
+            'customer_name': 'Table 10 Updated',
+            'items': {
+                '1': {'id': '1', 'name': 'Chilli Chicken', 'price': '120.00', 'qty': 3}
+            }
+        }
+        response = self.client.post(url, json.dumps(order_data), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+
+        # Check update reflected in session
+        updated_session = self.client.session
+        order = updated_session['orders']['test_id']
+        self.assertEqual(order['name'], 'Table 10 Updated')
+        self.assertEqual(float(order['total']), 360.0)
+
+    def test_pay_order_view(self):
+        # Create an order in session
+        session = self.client.session
+        session['orders'] = {
+            'pay_me_id': {
+                'id': 'pay_me_id',
+                'name': 'Table 12',
+                'items': {
+                    '2': {'id': '2', 'name': 'Tea', 'price': '12.00', 'qty': 2, 'subtotal': 24.0}
+                },
+                'total': 24.0,
+                'created_at': '2026-06-21 08:30 PM'
+            }
+        }
+        session.save()
+
+        # Mark paid
+        url = reverse('pay_order', kwargs={'order_id': 'pay_me_id'})
+        response = self.client.post(url)
+        self.assertRedirects(response, reverse('calculate'))
+
+        # Verify it has been deleted from session
+        updated_session = self.client.session
+        self.assertNotIn('pay_me_id', updated_session.get('orders', {}))
+

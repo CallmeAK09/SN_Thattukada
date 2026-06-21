@@ -303,13 +303,16 @@
         /* ── Typography ── */
         h1, h2, h3 { margin-bottom: 1rem; font-weight: 800; letter-spacing: -0.02em; }
 
-        /* ── Animations ── */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
+        /* ── Animations & Transitions ── */
+        @keyframes pageFadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
-        .fade-in { animation: fadeIn 0.4s ease forwards; }
+        main.page-content-animation {
+            opacity: 0;
+            animation: pageFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -328,6 +331,7 @@
                 <a href="{% url 'dashboard' %}" class="nav-item {% block nav_dashboard %}{% endblock %}">Dashboard</a>
                 <a href="{% url 'add_item' %}"  class="nav-item {% block nav_add %}{% endblock %}">Add Item</a>
                 <a href="{% url 'calculate' %}" class="nav-item {% block nav_calc %}{% endblock %}">Calculator</a>
+                <a href="{% url 'orders_list' %}" class="nav-item {% block nav_orders %}{% endblock %}">Orders</a>
             </nav>
 
             <!-- Hamburger (mobile only) -->
@@ -344,6 +348,7 @@
                 <a href="{% url 'dashboard' %}" class="nav-item {% block nav_dashboard_mobile %}{{ block.super }}{% endblock %}">Dashboard</a>
                 <a href="{% url 'add_item' %}"  class="nav-item {% block nav_add_mobile %}{{ block.super }}{% endblock %}">Add Item</a>
                 <a href="{% url 'calculate' %}" class="nav-item {% block nav_calc_mobile %}{{ block.super }}{% endblock %}">Calculator</a>
+                <a href="{% url 'orders_list' %}" class="nav-item {% block nav_orders_mobile %}{{ block.super }}{% endblock %}">Orders</a>
             </div>
         </nav>
     </header>
@@ -358,7 +363,7 @@
     </div>
     {% endif %}
 
-    <main class="fade-in">
+    <main class="page-content-animation">
         {% block content %}{% endblock %}
     </main>
 
